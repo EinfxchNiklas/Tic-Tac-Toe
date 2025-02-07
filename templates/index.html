@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.1.3/dist/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    
+    <!-- Reset Button -->
+    <button id="resetButton">Spiel zurücksetzten</button>
+    <p id="winnerMessage"></p>
+    
+    <!-- Spielfeld -->
+    <div id="board" class="board"></div>
+    
+    <!-- Anzeige für den Gewinner -->
+    <div id="winnerMessage"></div>
+
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Spielfeld dynamisch mit JavaScript erstellen
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';  // Board leeren, bevor es neu erstellt wird
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;  // Jedes Feld bekommt eine Indexnummer
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+            }
+        }
+
+        // Funktion für den Reset-Button
+        document.getElementById('resetButton').addEventListener('click', () => {
+            console.log('Resetting game');
+            socket.emit('reset_game');  // Event an den Server senden, um das Spiel zurückzusetzen
+        });
+
+        // Wenn das Spiel vorbei ist, den Gewinner anzeigen
+        socket.on('game_over', (data) => {
+            const winnerMessage = document.getElementById('winnerMessage');
+            if (data.winner) {
+                winnerMessage.textContent = `${data.winner} hat gewonnen!`;
+            } else {
+                winnerMessage.textContent = 'Das Spiel wurde zurückgesetzt.';
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to the server');
+        });
+
+        // Zellen klicken (Spielzug machen)
+        const handleCellClick = (event) => {
+            const cell = event.target;
+            console.log(`Cell clicked: ${cell.dataset.index}`);  // Debugging-Log
+            if (!cell.classList.contains('taken')) {
+                console.log(`Making move at: ${cell.dataset.index}`);  // Debugging-Log
+                socket.emit('make_move', { index: cell.dataset.index });
+            }
+
+        };        
+
+        // Spielfeld aktualisieren
+        socket.on('update_board', (boardState) => {
+            console.log('Updated board received:', boardState);  // Debugging
+            const cells = document.querySelectorAll('.cell');
+            for (let i = 0; i < boardState.length; i++) {
+                const cell = cells[i];
+                if (boardState[i] !== null) {
+                    cell.textContent = boardState[i];
+                    cell.classList.add('taken');
+                } else {
+                    cell.textContent = '';
+                    cell.classList.remove('taken');
+                }
+            }
+        });
+
+        // Alle Zellen zum Klicken aktivieren
+        document.addEventListener('DOMContentLoaded', () => {
+            createBoard();  // Spielfeld bei Seitenladen erstellen
+        });
+    </script>
+</body>
+</html>

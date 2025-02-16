@@ -1,4 +1,3 @@
-# http://192.168.178.163:5000/
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import webbrowser
@@ -18,7 +17,7 @@ def index():
 
 @socketio.on('make_move')
 def handle_move(data):
-    global current_player, game_over  # Zugriff auf die globalen Variablen
+    global current_player, game_over  
     index = int(data['index'])  # Der Index, der geklickt wurde
 
     if game_over:  # Falls das Spiel schon vorbei ist, keine Züge mehr erlauben
